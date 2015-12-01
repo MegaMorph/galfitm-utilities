@@ -20,106 +20,18 @@ matplotlib.rcParams.update({'font.size': 16,
                             'font.family': 'serif',
                             'font.serif': 'times',
                             'text.usetex': True})
-
 labelsize = 12
 
 rescolmap = matplotlib.colors.LinearSegmentedColormap.from_list('rescol', ('blue', 'black', 'white', 'red'), N=256, gamma=1.0)
-
-bands = ['u', 'g', 'r', 'i', 'z', 'Y', 'J', 'H', 'K']
-
-w = numpy.array([3543,4770,6231,7625,9134,10305,12483,16313,22010], numpy.float)
-
-#zp = numpy.array([16.75,15.957,15.0,14.563,14.259,14.162,13.955,13.636,13.525])
-#zpscale = 10**(-0.4*(zp-15.0))
-
-zp = numpy.array([29.0]*9)
-
-xlim = (2000, 23000)
-
-sim_std = {'MAG': 1.0 + numpy.array([16.935,15.964,15.0,14.562,14.267,14.183,13.992,13.672,13.547])}
-sim_A_disk = {'MAG': 1.0 + numpy.array([17.687,16.717,15.753,15.315,15.019,14.936,14.745,14.425,14.299]),
-              'Re': numpy.array([24.0]*9), 'n': numpy.array([1.0]*9),
-              'AR': numpy.array([0.4]*9), 'PA': numpy.array([45.0]*9)}
-sim_A_bulge = {'MAG': 1.0 + numpy.array([17.687,16.717,15.753,15.315,15.019,14.936,14.745,14.425,14.299]),
-              'Re': numpy.array([12.0]*9), 'n': numpy.array([4.0]*9),
-              'AR': numpy.array([0.8]*9), 'PA': numpy.array([45.0]*9)}
-sim_D_disk = {'MAG': 1.0 + numpy.array([17.328,16.509,15.753,15.374,15.112,15.056,14.882,14.597,14.5]),
-              'Re': numpy.array([24.0]*9), 'n': numpy.array([1.0]*9),
-              'AR': numpy.array([0.4]*9), 'PA': numpy.array([45.0]*9)}
-sim_D_bulge = {'MAG': 1.0 + numpy.array([18.229,16.974,15.753,15.258,14.934,14.827,14.623,14.276,14.13]),
-               'Re': numpy.array([12.0]*9), 'n': numpy.array([4.0]*9),
-               'AR': numpy.array([0.8]*9), 'PA': numpy.array([45.0]*9)}
-sim_E_disk = {'MAG': 1.0 + numpy.array([16.999,16.127,15.753,15.529,15.389,15.41,15.384,15.192,15.281]),
-              'Re': numpy.array([24.0]*9), 'n': numpy.array([1.0]*9),
-              'AR': numpy.array([0.8]*9), 'PA': numpy.array([45.0]*9)}
-sim_E_bulge = {'MAG': 1.0 + numpy.array([18.546,17.519,15.753,15.084,14.764,14.623,14.433,14.02,13.78]),
-               'Re': numpy.array([12.0]*9), 'n': numpy.array([4.0]*9),
-               'AR': numpy.array([0.9]*9), 'PA': numpy.array([45.0]*9)}
-
+labels = {'MAG': '$m$', 'Re': '$R_e$', 'n': '$n$', 'AR': '$b/a$', 'PA': '$\\theta$'}
 marker = ['o', '^', 's', 'D', 'x', '+', '*']
 linestyle = [':', '-', '.-', '.-.']
 
-ylim_std = {'MAG': (19.05, 13.45), 'Re': (5.05, 39.95), 'n': (0.05, 5.95),
-            'AR': (0.41, 0.79), 'PA': (35.05, 64.95)}
-
-ylim_disk = {'MAG': (20.05, 14.45), 'Re': (15.05, 34.95), 'n': (0.05, 2.95),
-             'AR': (0.21, 0.89), 'PA': (35.05, 64.95)}
-
-ylim_bulge = {'MAG': (20.05, 14.45), 'Re': (5.05, 22.95), 'n': (2.05, 7.95),
-              'AR': (0.61, 1.09), 'PA': (0.05, 89.95)}
-
+bands = ['u', 'g', 'r', 'i', 'z', 'Y', 'J', 'H', 'K']
+w = numpy.array([3543,4770,6231,7625,9134,10305,12483,16313,22010], numpy.float)
+xlim = (2000, 23000)
 #varlist_std = ('MAG', 'Re', 'n', 'AR', 'PA')
 varlist_std = ('MAG', 'Re', 'n')
-
-labels = {'MAG': '$m$', 'Re': '$R_e$', 'n': '$n$', 'AR': '$b/a$', 'PA': '$\\theta$'}
-
-def ugrizYJHK_cheb(wl):
-    y = numpy.array([100.000,100.058,100.217,100.541,100.924,101.307,101.631,101.790,101.848])
-    fn = interp1d(w, y, 'linear', bounds_error=False)
-    return fn(wl)
-
-wlfuncs = {'A1c': numpy.log10, 'Ah1c': numpy.log10, 'A1e': ugrizYJHK_cheb}
-
-def poster_plots():
-    plot(('D1', 'D4'), 1, 'D1D4-1', 'True', ylim=ylim_bulge, sim=sim_D_bulge, varlist=('MAG', 'Re', 'n')) # and D6
-
-
-def plot_all():
-    plot_standard()
-    plot_nonparam()
-
-def plot_standard():
-    plot(('A2', 'A1', 'A3'), 1, '01', 'True')
-    plot(('Ah2', 'Ah1', 'Ah3'), 1, '02', 'True')
-    plot(('Bh2', 'Bh1', 'Bh3'), 1, '03', 'True')
-    plot(('A1e', 'A1c', 'A1'), 1, '04', 'True')  # add additional wavelength scale
-    plot(('Ah1c', 'Ah1'), 1, '04h', 'True')  # add additional wavelength scale
-    plot(('A1a', 'A1', 'A1b'), 1, '05', 'True', varlist=('MAG',))
-    plot(('Ah1a', 'Ah1', 'Ah1b'), 1, '05h', 'True', varlist=('MAG',))
-    # plot(('A1', 'A1c', 'A1d'), 1, '06', 'True')
-    # plot(('Ah1', 'Ah1c', 'Ah1d'), 1, '06h', 'True')
-    # illustration 7 requires a different kind of plot
-    plot(('D2', 'D1', 'D3'), 1, '08', 'True', varlist=('MAG', 'Re', 'n', 'AR', 'PA'))
-    plot(('A5', 'A4', 'A6'), 1, '09-1', 'True', ylim=ylim_bulge, sim=sim_A_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('A5', 'A4', 'A6'), 2, '09-2', 'True', ylim=ylim_disk, sim=sim_A_disk, varlist=('MAG', 'Re'))
-    plot(('D5', 'D4', 'D6'), 1, '10-1', 'True', ylim=ylim_bulge, sim=sim_D_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('D5', 'D4', 'D6'), 2, '10-2', 'True', ylim=ylim_disk, sim=sim_D_disk, varlist=('MAG', 'Re'))
-    plot(('Dh5', 'Dh4', 'Dh6'), 1, '10h-1', 'True', ylim=ylim_bulge, sim=sim_D_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('Dh5', 'Dh4', 'Dh6'), 2, '10h-2', 'True', ylim=ylim_disk, sim=sim_D_disk, varlist=('MAG', 'Re'))
-    plot(('E5', 'E4', 'E6'), 1, '11-1', 'True', ylim=ylim_bulge, sim=sim_E_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('E5', 'E4', 'E6'), 2, '11-2', 'True', ylim=ylim_disk, sim=sim_E_disk, varlist=('MAG', 'Re'))
-    plot(('Eh5', 'Eh4', 'Eh6'), 1, '11h-1', 'True', ylim=ylim_bulge, sim=sim_E_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('Eh5', 'Eh4', 'Eh6'), 2, '11h-2', 'True', ylim=ylim_disk, sim=sim_E_disk, varlist=('MAG', 'Re'))
-
-def plot_nonparam():
-    plot(('NA1n', 'NA1'), 1, 'N01', 'True')
-    plot(('NA2n', 'NA2'), 1, 'N02', 'True')
-    plot(('NA4n', 'NA4'), 1, 'N03-1', 'True', ylim=ylim_bulge, sim=sim_A_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('NA4n', 'NA4'), 2, 'N03-2', 'True', ylim=ylim_disk, sim=sim_A_disk, varlist=('MAG', 'Re'))
-    plot(('NB4n', 'NB4'), 1, 'N04-1', 'True', ylim=ylim_bulge, sim=sim_A_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('NB4n', 'NB4'), 2, 'N04-2', 'True', ylim=ylim_disk, sim=sim_A_disk, varlist=('MAG', 'Re'))
-    plot(('NC4n', 'NC4', 'NC4m'), 1, 'N05-1', 'True', ylim=ylim_bulge, sim=sim_A_bulge, varlist=('MAG', 'Re', 'n'))
-    plot(('NC4n', 'NC4', 'NC4m'), 2, 'N05-2', 'True', ylim=ylim_disk, sim=sim_A_disk, varlist=('MAG', 'Re'))
 
 
 def plot(id=('A2', 'A1'), compno=1, name='0', show_func=False,
@@ -155,7 +67,7 @@ def plot(id=('A2', 'A1'), compno=1, name='0', show_func=False,
             plotnonparamcolimg(npid, name)
 
 
-def plotimg(id, name='0'):
+def plotimg(fn, name=None):
     cmap_img = pyplot.cm.gray
     cmap_res = rescolmap
     norm_res = None
@@ -191,6 +103,8 @@ def plotimg(id, name='0'):
                 ax.set_xlabel('residual %s'%iid, fontsize=labelsize)
             ticksoff(ax)
             pyplot.imshow(img[2][ib][::-1], cmap=cmap_res, norm=norm_res, vmin=-vrange[ib], vmax=vrange[ib], interpolation='nearest')
+    if name is None:
+        name = os.path.splitext(os.path.basename(fn))[0]
     fig.savefig('plots/images_%s.pdf'%name)
     pyplot.close('all')
 
@@ -327,7 +241,7 @@ def plotres(res, id, field, func=None, norm=None):
         if nid%2 == 0:
             x = w + 100 * (1+i//2) * (-1)**i
         else:
-            x = w + 100 * (1+i//2) * (-1)**i            
+            x = w + 100 * (1+i//2) * (-1)**i
         if func is not None and func[i] is not None:
             mec = mec_func
             mfc = mfc_func
@@ -361,28 +275,40 @@ def plotfunc(func, wlfunc=None, color='red', label=''):
     y = func(xfunc)
     return pyplot.plot(x, y, '-', color=color, label=label, alpha=0.5)
 
-def fit_results(f):
-    fn = 'fits/%s/fit%s.fits'%(f,f)
-    r = None
-    if os.path.exists(fn):
+
+def fit_results(fn, bands=None):
+    """Get the galfitm results table from the specified filename(s)
+
+    If `bands` is supplied, it should be a list of band id strings and fn
+    should include a format placeholder `{}`, which will be replaced by each
+    band id in turn. In this case a list of results tables is returned.
+    """
+    if bands is None:
         r = pyfits.getdata(fn, 'final_band')
     else:
-        r = numpy.concatenate([pyfits.getdata('fits/%s/fit%s%s.fits'%(f,f, b), 'final_band')
+        r = numpy.concatenate([pyfits.getdata(fn.format(b), 'final_band')
                               for b in bands])
     return r
 
-def fit_images(f, bands=bands):
-    fn = 'fits/%s/fit%s.fits'%(f,f)
-    r = None
-    if os.path.exists(fn):
-        original = [pyfits.getdata(fn, 'input_%s'%b) for b in bands]
-        model = [pyfits.getdata(fn, 'model_%s'%b) for b in bands]
-        residual = [pyfits.getdata(fn, 'residual_%s'%b) for b in bands]
+
+def fit_images(fn, bands):
+    """Get the images from the specified galfit(m) filename(s)
+
+    `bands` should be a list of band id strings.
+    If fn includes a format placeholder `{}`, this will be replaced by each
+    band id in turn. Otherwise all bands are assumed to be in a single file.
+    """
+    # TODO: add auto-discovery of bands for galfitm files
+    if '{}' in fn:
+        original = [pyfits.getdata(fn, 'input_{}'.format(b)) for b in bands]
+        model = [pyfits.getdata(fn, 'model_{}'.format(b)) for b in bands]
+        residual = [pyfits.getdata(fn, 'residual_{}'.format(b)) for b in bands]
     else:
-        original = [pyfits.getdata('fits/%s/fit%s%s.fits'%(f,f, b), 'input_x') for b in bands]
-        model = [pyfits.getdata('fits/%s/fit%s%s.fits'%(f,f, b), 'model_x') for b in bands]
-        residual = [pyfits.getdata('fits/%s/fit%s%s.fits'%(f,f, b), 'residual_x') for b in bands]
+        original = [pyfits.getdata(fn.format(b), 'input_x') for b in bands]
+        model = [pyfits.getdata(fn.format(b), 'model_x') for b in bands]
+        residual = [pyfits.getdata(fn.format(b), 'residual_x') for b in bands]
     return [original, model, residual]
+
 
 def nonparam_images(f, bands=bands):
     fn = 'fits/%s/fit%s.fits'%(f,f)
@@ -409,9 +335,9 @@ def fit_func(f):
     else:
         r = None
     return r
-    
 
-def make_bands_plot(fig, subplot=111, ylabel='', top=True, bottom=True):    
+
+def make_bands_plot(fig, subplot=111, ylabel='', top=True, bottom=True):
     ax1 = fig.add_subplot(*subplot)
     ax2 = ax1.twiny()
     ax1.set_ylabel(ylabel)
@@ -451,7 +377,7 @@ class Sersic:
         return self.mu_r(r)
     def mu_r(self, r):
         # Returns the surface brightess at specified major axis radius,
-        # within annular ellipses corresponding to the shape of each component individualy 
+        # within annular ellipses corresponding to the shape of each component individualy
         # Taking, e.g. colours, this currently assumes major axes of components align
         # to be more generally correct need to account for AR, PA, XC, YC,
         # and either select specific vector, or properly compute azimuthal average
