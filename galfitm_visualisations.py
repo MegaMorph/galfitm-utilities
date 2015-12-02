@@ -2,7 +2,7 @@
 
 from glob import glob
 import os
-import numpy
+import numpy as np
 import pyfits
 import matplotlib
 from matplotlib import pyplot
@@ -28,131 +28,164 @@ marker = ['o', '^', 's', 'D', 'x', '+', '*']
 linestyle = [':', '-', '.-', '.-.']
 
 bands = ['u', 'g', 'r', 'i', 'z', 'Y', 'J', 'H', 'K']
-w = numpy.array([3543,4770,6231,7625,9134,10305,12483,16313,22010], numpy.float)
+w = np.array([3543,4770,6231,7625,9134,10305,12483,16313,22010], np.float)
 xlim = (2000, 23000)
 #varlist_std = ('MAG', 'Re', 'n', 'AR', 'PA')
 varlist_std = ('MAG', 'Re', 'n')
 
 
-def plot(id=('A2', 'A1'), compno=1, name='0', show_func=False,
-         varlist=varlist_std, ylim=ylim_std, sim=sim_std):
-    print name, ':', id
-    res = [fit_results(i) for i in id]
-    if show_func:
-        func = [fit_func(i) for i in id]
-    else:
-        func = None
-    nvar = len(varlist)
-    fig = pyplot.figure(figsize=(5, 15))
-    fig.subplots_adjust(bottom=0.05, top=0.94, left=0.2, right=0.95, hspace=0.075)
-    for i, v in enumerate(varlist):
-        ax = make_bands_plot(fig, (5, 1, i+1), labels[v], i==0, i==nvar-1)
-        if v in sim.keys():
-            pyplot.plot(w, sim[v], '-k', alpha=0.75)
-        plotres(res, id, 'COMP%i_%s'%(compno, v), func)
-        if v in sim.keys():
-            pyplot.plot(w, sim[v], 'xk', markersize=10.0, alpha=0.75)
-        pyplot.ylim(ylim[v])
-        if i==0:
-            pyplot.legend(loc='lower right', numpoints=1, prop={'size': 16})
-    fig.savefig('plots/illustration_%s.pdf'%name)
-    pyplot.close('all')
-    if compno==1:
-        plotimg(id, name)
-        plotcolimg(id, name)
-        plotprof(id, name)
-        plotcolprof(id, name)
-        npid = [j for j in id if j[0] == 'N' and j[-1] in 'nm']
-        if len(npid) > 0:
-            plotnonparamcolimg(npid, name)
+# def plot(id=('A2', 'A1'), compno=1, name='0', show_func=False,
+#          varlist=varlist_std, ylim=ylim_std, sim=sim_std):
+#     print name, ':', id
+#     res = [fit_results(i) for i in id]
+#     if show_func:
+#         func = [fit_func(i) for i in id]
+#     else:
+#         func = None
+#     nvar = len(varlist)
+#     fig = pyplot.figure(figsize=(5, 15))
+#     fig.subplots_adjust(bottom=0.05, top=0.94, left=0.2, right=0.95, hspace=0.075)
+#     for i, v in enumerate(varlist):
+#         ax = make_bands_plot(fig, (5, 1, i+1), labels[v], i==0, i==nvar-1)
+#         if v in sim.keys():
+#             pyplot.plot(w, sim[v], '-k', alpha=0.75)
+#         plotres(res, id, 'COMP%i_%s'%(compno, v), func)
+#         if v in sim.keys():
+#             pyplot.plot(w, sim[v], 'xk', markersize=10.0, alpha=0.75)
+#         pyplot.ylim(ylim[v])
+#         if i==0:
+#             pyplot.legend(loc='lower right', numpoints=1, prop={'size': 16})
+#     fig.savefig('plots/illustration_%s.pdf'%name)
+#     pyplot.close('all')
+#     if compno==1:
+#         plotimg(id, name)
+#         plotcolimg(id, name)
+#         plotprof(id, name)
+#         plotcolprof(id, name)
+#         npid = [j for j in id if j[0] == 'N' and j[-1] in 'nm']
+#         if len(npid) > 0:
+#             plotnonparamcolimg(npid, name)
 
 
-def plotimg(fn, name=None):
-    cmap_img = pyplot.cm.gray
-    cmap_res = rescolmap
-    norm_res = None
+def plotimg(fns, bands, ids=None, name=None, label=False,
+            cmap_img=pyplot.cm.gray,
+            cmap_res=rescolmap, norm_res=None):
+    """ Create a plot of data, model, residual from supplied filename
+
+    If fns is a sequence of filenames, plot model and residual from each,
+    for comparison.
+    """
+
     nbands = len(bands)
-    nid = len(id)
-    fig = pyplot.figure(figsize=(15.0/nbands * (1+nid*2), 15))
-    fig.subplots_adjust(bottom=0.05, top=0.95, left=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    for i, iid in enumerate(id):
-        img = fit_images(iid)
+    fns = np.atleast_1d(fns)
+    nid = len(fns)
+    rows = 1 + 2 * nid
+    fig = pyplot.figure(figsize=(15.0 / nbands * rows, 15))
+    fig.subplots_adjust(bottom=0.05, top=0.95, left=0.05, right=0.95,
+                        hspace=0.0, wspace=0.0)
+    for i, fn in enumerate(fns):
+        img = fit_images(fn, bands)
+        if ids is not None:
+            iid = ids[i]
+        else:
+            iid = os.path.splitext(os.path.basename(fn))[0]
         if i == 0:
             vmin = []
             vmax = []
             vrange = []
             for ib, b in enumerate(bands):
-                ax = fig.add_subplot(nbands, 1+2*len(id), 1+ib*(1+nid*2)+i*2)
-                if ib==nbands-1:
+                ax = fig.add_subplot(nbands, rows,
+                                     1 + ib * rows + i * 2)
+                if label and ib == nbands - 1:
                     ax.set_xlabel('image', fontsize=labelsize)
                 ticksoff(ax)
                 vmin.append(scoreatpercentile(img[0][ib].ravel(), 0.1))
                 vmax.append(scoreatpercentile(img[0][ib].ravel(), 99.9))
-                vrange.append(scoreatpercentile(img[2][ib].ravel(), 99.9) - scoreatpercentile(img[2][ib].ravel(), 0.1))
-                pyplot.imshow(img[0][ib][::-1], cmap=cmap_img, vmin=vmin[ib], vmax=vmax[ib], interpolation='nearest')
-                ax.set_ylabel('$%s$'%b, fontsize=labelsize)
+                vrange.append(scoreatpercentile(img[2][ib].ravel(), 99.9) -
+                              scoreatpercentile(img[2][ib].ravel(), 0.1))
+                pyplot.imshow(img[0][ib][::-1], cmap=cmap_img, vmin=vmin[ib],
+                              vmax=vmax[ib], interpolation='nearest')
+                ax.set_ylabel('${}$'.format(b), fontsize=labelsize)
         for ib, b in enumerate(bands):
-            ax = fig.add_subplot(nbands, 1+2*len(id), 2+ib*(1+nid*2)+i*2)
-            if ib==nbands-1:
-                ax.set_xlabel('model %s'%iid, fontsize=labelsize)
+            ax = fig.add_subplot(nbands, rows,
+                                 2 + ib * rows + i * 2)
+            if label and ib == nbands - 1:
+                ax.set_xlabel('model {}'.format(iid), fontsize=labelsize)
             ticksoff(ax)
-            pyplot.imshow(img[1][ib][::-1], cmap=cmap_img, vmin=vmin[ib], vmax=vmax[ib], interpolation='nearest')
+            pyplot.imshow(img[1][ib][::-1], cmap=cmap_img, vmin=vmin[ib],
+                          vmax=vmax[ib], interpolation='nearest')
         for ib, b in enumerate(bands):
-            ax = fig.add_subplot(nbands, 1+2*len(id), 3+ib*(1+nid*2)+i*2)
-            if ib==nbands-1:
-                ax.set_xlabel('residual %s'%iid, fontsize=labelsize)
+            ax = fig.add_subplot(nbands, rows,
+                                 3 + ib * rows + i * 2)
+            if label and ib == nbands - 1:
+                ax.set_xlabel('residual {}'.format(iid), fontsize=labelsize)
             ticksoff(ax)
-            pyplot.imshow(img[2][ib][::-1], cmap=cmap_res, norm=norm_res, vmin=-vrange[ib], vmax=vrange[ib], interpolation='nearest')
+            pyplot.imshow(img[2][ib][::-1], cmap=cmap_res, norm=norm_res,
+                          vmin=-vrange[ib], vmax=vrange[ib],
+                          interpolation='nearest')
     if name is None:
-        name = os.path.splitext(os.path.basename(fn))[0]
-    fig.savefig('plots/images_%s.pdf'%name)
+        name = os.path.splitext(os.path.basename(fns[0]))[0]
+    fig.savefig('plots/images_{}.pdf'.format(name))
     pyplot.close('all')
 
 
-def plotcolimg(id, name='0', rgb='Hzg', desaturate=True, pedestal=0):
+def plotcolimg(fns, rgb='Hzg', ids=None, name=None, label=False,
+               desaturate=True, pedestal=0):
     nbands = len(bands)
-    nid = len(id)
+    fns = np.atleast_1d(fns)
+    nid = len(fns)
     beta = 2.5
-    scales = numpy.array((0.04, 0.055, 0.2))
+    scales = np.array((0.04, 0.055, 0.2))
     # offsets not so necessary now have nice desaturation feature working
-    offsets = numpy.array([75.0, 40.0, 8.0]) * 0.5
-    fig = pyplot.figure(figsize=(15.0/nbands * (1+nid*2), 15))
-    fig.subplots_adjust(bottom=0.05, top=0.95, left=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    for i, iid in enumerate(id):
-        img = fit_images(iid, rgb)
+    offsets = np.array([75.0, 40.0, 8.0]) * 0.5
+    rows = 1 + 2 * nid
+    fig = pyplot.figure(figsize=(15.0 / nbands * rows, 15))
+    fig.subplots_adjust(bottom=0.05, top=0.95, left=0.05, right=0.95,
+                        hspace=0.0, wspace=0.0)
+    for i, fn in enumerate(fns):
+        if ids is not None:
+            iid = ids[i]
+        else:
+            iid = os.path.splitext(os.path.basename(fn))[0]
+        img = fit_images(fn, rgb)
         img[0] = [img[0][j] - offsets[j] for j in range(3)]
         img[1] = [img[1][j] - offsets[j] for j in range(3)]
-        img[2] = [img[2][j] + scales[j]*2*offsets.mean() for j in range(3)]
+        img[2] = [img[2][j] + scales[j] * 2 * offsets.mean() for j in range(3)]
         if i == 0:
-            ax = fig.add_subplot(nbands, 1+2*nid, 1+i*2)
+            ax = fig.add_subplot(nbands, rows, 1 + i * 2)
             ticksoff(ax)
             ax.set_xlabel('image', fontsize=labelsize)
             colimg = RGBImage(*img[0], scales=scales, beta=beta,
                               desaturate=desaturate, pedestal=pedestal).img
             pyplot.imshow(colimg, interpolation='nearest', origin='lower')
-        ax = fig.add_subplot(nbands, 1+2*nid, 2+i*2)
+        ax = fig.add_subplot(nbands, rows, 2 + i * 2)
         ticksoff(ax)
-        ax.set_xlabel('model %s'%iid, fontsize=labelsize)
+        if label:
+            ax.set_xlabel('model {}'.format(iid), fontsize=labelsize)
         colimg = RGBImage(*img[1], scales=scales, beta=beta,
                           desaturate=False, pedestal=pedestal).img
         pyplot.imshow(colimg, interpolation='nearest', origin='lower')
-        ax = fig.add_subplot(nbands, 1+2*nid, 3+i*2)
+        ax = fig.add_subplot(nbands, rows, 3 + i * 2)
         ticksoff(ax)
-        ax.set_xlabel('residual %s'%iid, fontsize=labelsize)
+        if label:
+            ax.set_xlabel('residual {}'.format(iid), fontsize=labelsize)
         colimg = RGBImage(*img[2], scales=scales, beta=beta,
                           desaturate=desaturate).img
         pyplot.imshow(colimg, interpolation='nearest', origin='lower')
-    fig.savefig('plots/colimages_%s.pdf'%name)
+    if name is None:
+        name = os.path.splitext(os.path.basename(fns[0]))[0]
+    fig.savefig('plots/colimages_{}.pdf'.format(name))
     pyplot.close('all')
 
 
 def plotnonparamcolimg(id, name='0', rgb='Hzg', desaturate=True, pedestal=0):
     nbands = len(bands)
-    nid = len(id)
+    fns = np.atleast_1d(fns)
+    nid = len(fns)
     beta = 2.5
-    scales = numpy.array((0.04, 0.055, 0.2))
+    scales = np.array((0.04, 0.055, 0.2))
     # offsets not so necessary now have nice desaturation feature working
-    offsets = numpy.array([75.0, 40.0, 8.0]) * 0.5
+    offsets = np.array([75.0, 40.0, 8.0]) * 0.5
     fig = pyplot.figure(figsize=(15.0/nbands * (1+nid*2), 15))
     fig.subplots_adjust(bottom=0.05, top=0.95, left=0.05, right=0.95, hspace=0.0, wspace=0.0)
     original_iid = None
@@ -226,48 +259,50 @@ def ticksoff(ax):
     ax.set_yticks([])
 
 
-def plotres(res, id, field, func=None, norm=None):
-    nid = len(id)
-    #mec = ['black', None] * (1+nid//2)
-    #mfc = ['white', 'black'] * (1+nid//2)
-    #color = ['grey', 'grey'] * (1+nid//2)
-    mec_func = ['DeepSkyBlue' ,'DarkGreen', 'Orange']
+def plotres(fns, field, func=None, norm=None, ids=None, wlfunc=None):
+    fns = np.atleast_1d(fns)
+    res = [fit_results(f) for f in fns]
+    nid = len(fns)
+    # mec = ['black', None] * (1+nid//2)
+    # mfc = ['white', 'black'] * (1+nid//2)
+    # color = ['grey', 'grey'] * (1+nid//2)
+    mec_func = ['DeepSkyBlue', 'DarkGreen', 'Orange']
     mfc_func = ['DeepSkyBlue', 'white', 'white']
     color = ['DeepSkyBlue', 'DarkGreen', 'Orange']
     mec_nofunc = ['MediumPurple', 'MediumSeaGreen', 'Pink']
     mfc_nofunc = ['MediumPurple', 'MediumSeaGreen', 'Pink']
+    wlfunc = np.resize(wlfunc, nid)
     ymin, ymax = (1e99, -1e99)
-    for i, iid in enumerate(id):
-        if nid%2 == 0:
-            x = w + 100 * (1+i//2) * (-1)**i
-        else:
-            x = w + 100 * (1+i//2) * (-1)**i
+    for i, fn in enumerate(fns):
+        x = w + 100 * (1 + i // 2) * (-1)**i
         if func is not None and func[i] is not None:
             mec = mec_func
             mfc = mfc_func
             f = func[i][field]
             if norm is not None:
                 f /= norm[i][field]
-            plotfunc(f, wlfunc=wlfuncs.get(iid), color=color[i])
+            plotfunc(f, wlfunc=wlfunc[i], color=color[i])
         else:
             mec = mec_nofunc
             mfc = mfc_nofunc
         r = res[i][field]
         if norm is not None:
             r /= norm[i][field](x)
-        pyplot.errorbar(x, r, res[i][field+'_ERR'], color=mec[i],
-                        marker=marker[i//2], mec=mec[i], markerfacecolor=mfc[i], linestyle='',
+        pyplot.errorbar(x, r, res[i][field + '_ERR'], color=mec[i],
+                        marker=marker[i // 2], mec=mec[i],
+                        markerfacecolor=mfc[i], linestyle='',
                         label=iid)
-        ymin = min(ymin, (res[i][field]-res[i][field+'_ERR']).min())
-        ymax = max(ymax, (res[i][field]+res[i][field+'_ERR']).max())
+        ymin = min(ymin, (res[i][field] - res[i][field + '_ERR']).min())
+        ymax = max(ymax, (res[i][field] + res[i][field + '_ERR']).max())
     yrange = ymax - ymin
     ymin -= 0.05 * yrange
     ymax += 0.05 * yrange
     pyplot.ylim(ymin, ymax)
 
+
 def plotfunc(func, wlfunc=None, color='red', label=''):
     dx = (xlim[1] - xlim[0]) / 1000.0
-    x = numpy.arange(xlim[0], xlim[1]+dx/2.0, dx)
+    x = np.arange(xlim[0], xlim[1] + dx / 2.0, dx)
     if wlfunc is None:
         xfunc = x
     else:
@@ -286,7 +321,7 @@ def fit_results(fn, bands=None):
     if bands is None:
         r = pyfits.getdata(fn, 'final_band')
     else:
-        r = numpy.concatenate([pyfits.getdata(fn.format(b), 'final_band')
+        r = np.concatenate([pyfits.getdata(fn.format(b), 'final_band')
                               for b in bands])
     return r
 
@@ -300,14 +335,14 @@ def fit_images(fn, bands):
     """
     # TODO: add auto-discovery of bands for galfitm files
     if '{}' in fn:
-        original = [pyfits.getdata(fn, 'input_{}'.format(b)) for b in bands]
-        model = [pyfits.getdata(fn, 'model_{}'.format(b)) for b in bands]
-        residual = [pyfits.getdata(fn, 'residual_{}'.format(b)) for b in bands]
-    else:
         original = [pyfits.getdata(fn.format(b), 'input_x') for b in bands]
         model = [pyfits.getdata(fn.format(b), 'model_x') for b in bands]
         residual = [pyfits.getdata(fn.format(b), 'residual_x') for b in bands]
-    return [original, model, residual]
+    else:
+        original = [pyfits.getdata(fn, 'input_{}'.format(b)) for b in bands]
+        model = [pyfits.getdata(fn, 'model_{}'.format(b)) for b in bands]
+        residual = [pyfits.getdata(fn, 'residual_{}'.format(b)) for b in bands]
+        return [original, model, residual]
 
 
 def nonparam_images(f, bands=bands):
@@ -320,6 +355,7 @@ def nonparam_images(f, bands=bands):
         nonparam = [pyfits.getdata('fits/%s/fit%s%s.fits'%(f,f, b), 'nonparam_x') for b in bands]
         datasub = [pyfits.getdata('fits/%s/fit%s%s.fits'%(f,f, b), 'datasub_x') for b in bands]
     return [nonparam, datasub]
+
 
 def fit_func(f):
     fn = 'fits/%s/fit%s.fits'%(f,f)
@@ -349,7 +385,7 @@ def make_bands_plot(fig, subplot=111, ylabel='', top=True, bottom=True):
     ax2.set_xlim(xlim)
     ax1.set_xticks(w)
     if bottom:
-        ax1.set_xticklabels(['$'+i+'$' for i in bands])
+        ax1.set_xticklabels(['${}$'.format(i) for i in bands])
     else:
         ax1.set_xticklabels([])
     pyplot.setp(ax1.get_xticklabels(), va='baseline')
@@ -394,11 +430,11 @@ class Sersic:
     def I_el(self, r_m, ar_m, pa_m=0):
         return quad(self.I_el_theta, 0, 2*pi, args=(r_m, ar_m, pa_m))[0] / (2*pi)
     def mu_el(self, r_m, ar_m, pa_m=0):
-        return -2.5*numpy.log10(self.I_el(r_m, ar_m, pa_m))
+        return -2.5*np.log10(self.I_el(r_m, ar_m, pa_m))
     def mu_el_theta(self, theta, r_m, ar_m, pa_m=0):
-        x = r_m * numpy.cos(theta - pa_m)
-        y = ar_m * r_m * numpy.sin(theta - pa_m)
-        r_c = numpy.sqrt(x**2 + self.ar**2 * y**2)
+        x = r_m * np.cos(theta - pa_m)
+        y = ar_m * r_m * np.sin(theta - pa_m)
+        r_c = np.sqrt(x**2 + self.ar**2 * y**2)
         return self.mu_r(r_c)
     def I_el_theta(self, theta, r_m, ar_m, pa_m=0):
         return 10**(-0.4*self.mu_el_theta(theta, r_m, ar_m, pa_m))
@@ -406,12 +442,12 @@ class Sersic:
 
 def plotprof(id=('A1', 'A2'), name='0'):
     print name, ':', id
-    color = [cm.gist_rainbow(i) for i in numpy.linspace(1.0, 0.0, 9)]
+    color = [cm.gist_rainbow(i) for i in np.linspace(1.0, 0.0, 9)]
     func, remax = make_funcs(id)
     fig = pyplot.figure(figsize=(5, 5))
     fig.subplots_adjust(bottom=0.15, top=0.95, left=0.15, right=0.95, hspace=0.0, wspace=0.0)
     rmax = remax*3.0001
-    r = numpy.arange(rmax/10000.0, rmax, rmax/100.0)
+    r = np.arange(rmax/10000.0, rmax, rmax/100.0)
     for i, iid in enumerate(id):
         print i
         for j in range(len(func[i])):
@@ -437,12 +473,12 @@ def plotcolprof(id=('A1', 'A2'), name='0'):
     # normalised at remax and offset for display purposes
     print name, ':', id
     offset = 0.5
-    color = [cm.gist_rainbow(i) for i in numpy.linspace(1.0, 0.0, 9)]
+    color = [cm.gist_rainbow(i) for i in np.linspace(1.0, 0.0, 9)]
     func, remax = make_funcs(id)
     fig = pyplot.figure(figsize=(5, 5))
     fig.subplots_adjust(bottom=0.15, top=0.95, left=0.15, right=0.95, hspace=0.0, wspace=0.0)
     rmax = remax*3.0001
-    r = numpy.arange(rmax/10000.0, rmax, rmax/100.0)
+    r = np.arange(rmax/10000.0, rmax, rmax/100.0)
     for i, iid in enumerate(id):
         print i
         for k in range(len(bands)-1):
@@ -460,8 +496,8 @@ def plotcolprof(id=('A1', 'A2'), name='0'):
                 f2 += 10**(-0.4*func[i][j][k+1](r))
                 f1max += 10**(-0.4*func[i][j][k](remax))
                 f2max += 10**(-0.4*func[i][j][k+1](remax))
-            colour = -2.5*numpy.log10(f1/f2)
-            colour_remax = -2.5*numpy.log10(f1max/f2max)
+            colour = -2.5*np.log10(f1/f2)
+            colour_remax = -2.5*np.log10(f1max/f2max)
             colour -= colour_remax
             colour += offset*k
             pyplot.hlines([offset*k], 0.0, rmax, colors='grey')
