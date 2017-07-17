@@ -85,8 +85,8 @@ HISTORY
 __version__ = '0.1 (June 22, 2006)'
 __credits__ = '''The code is written by Taro Sato (nomo17k@gmail.com)'''
 
-import Image as I
-import pyfits as P
+from PIL import Image as I
+import astropy.io.fits as P
 import numpy as N
 
 
@@ -211,7 +211,7 @@ class RGBImage(object):
         self.g = N.asarray(g).copy()*self.scales[1]
         self.b = N.asarray(b).copy()*self.scales[2]
         if not (self.r.shape==self.g.shape==self.b.shape):
-            raise ValueError,('input data shape not consistent')
+            raise ValueError('input data shape not consistent')
         # self.shape needs to be (horizontal,vertical) in size
         self.shape = (self.r.shape[1],self.r.shape[0])
         # set normalized RGB pixel values
@@ -222,7 +222,7 @@ class RGBImage(object):
         # call the specified mapping function
         try: R,G,B = self.mapping(self.r,self.g,self.b,args=self.__dict__)
         except NameError:
-            raise ValueError,('mapping method "%s" is not defined' %
+            raise ValueError('mapping method "%s" is not defined' %
                               self.mapping.__name__)
         # reorganize for putdata(data)
         data = N.array([R.ravel(),G.ravel(),B.ravel()])
