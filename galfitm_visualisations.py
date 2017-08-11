@@ -366,9 +366,22 @@ def fit_images(fn, bands=None, zoom=None,
     If fn includes a format placeholder `{}`, this will be replaced by each
     band id in turn. Otherwise all bands are assumed to be in a single file.
     """
-    # TODO: add auto-discovery of bands for galfitm files
+    # auto-discovery of bands for galfitm files
+    multiband = True
+    if '{}' not in fn:
+        with pyfits.open(fn) as p:
+            names = [x.name for x in p]
+        ext = extensions[0].upper()
+        if ext in names:
+            multiband = False
+        else:
+            ext = ext + '_'
+            found_bands = [x.name.replace(ext, '') for x in p
+                           if x.name.startswith(ext)]
+            if bands is None:
+                bands = found_bands
     out = []
-    if bands is None:
+    if not multiband:
         for ext in extensions:
             try:
                 hdu = [pyfits.getdata(fn, ext)]
