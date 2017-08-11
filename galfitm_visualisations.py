@@ -268,6 +268,8 @@ def plotnonparamcolimg(fns, rgb='Hzg', ids=None, name=None, label=False,
         # Third row, nonparam diagnostics
         nonparam = nonparam_images(iid, rgb)
         datasub = [img[0][j] - nonparam[j] for j in range(3)]
+        nonparam = [nonparam - offsets[j] for j in range(3)]
+        datasub = [datasub[j] - offsets[j] for j in range(3)]
         ax = fig.add_subplot(nbands, 1+2*nid, 2+4*nid+2+i*2)
         ticksoff(ax)
         ax.set_xlabel('nonparam %s'%iid, fontsize=labelsize)
